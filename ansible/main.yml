@@ -1,0 +1,28 @@
+---
+- hosts: t1
+  gather_facts: False
+  remote_user: root
+  vars:
+      common_path:
+          app1: /tmp/app1
+          app2: /tmp/app2
+
+  tasks:
+      - name: check /tmp/app1 directory exists
+        stat: path={{ common_path.app1 }}
+        register: st1
+
+      - name: check /tmp/app2 directory exists
+        stat: path={{ common_path.app2 }}
+        register: st2
+
+      - name: create /tmp/app1 if not exists
+        file: path={{ common_path.app1 }} state=directory owner=root group=root
+        when: st1.stat.exists == false
+
+      - name: create /tmp/app2 if not exists
+        file: path={{ common_path.app2 }} state=directory owner=root group=root
+        when: st2.stat.exists == false
+
+      - name: exec shell command uptime
+        shell: uptime
