@@ -1,28 +1,35 @@
----
-- hosts: t1
-  gather_facts: False
-  remote_user: root
-  vars:
-      common_path:
-          app1: /tmp/app1
-          app2: /tmp/app2
+from api import ADHocRunner
+from api import PlayBookRunner
+import json
 
-  tasks:
-      - name: check /tmp/app1 directory exists
-        stat: path={{ common_path.app1 }}
-        register: st1
 
-      - name: check /tmp/app2 directory exists
-        stat: path={{ common_path.app2 }}
-        register: st2
+def run_adhoc():
+    runner = ADHocRunner()
+    hosts = [
+        "1.1.1.1",
+        "1.1.1.2"
+    ]
 
-      - name: create /tmp/app1 if not exists
-        file: path={{ common_path.app1 }} state=directory owner=root group=root
-        when: st1.stat.exists == false
+    tasks = [
+        dict(action=dict(module="shell", args="uptime"), register="res"),
+        dict(action=dict(module="debug", args=dict(msg="{{res.stdout}}")))
+    ]
 
-      - name: create /tmp/app2 if not exists
-        file: path={{ common_path.app2 }} state=directory owner=root group=root
-        when: st2.stat.exists == false
+    #result = runner.run(hosts, tasks)
+    result = runner.run("t1", tasks)
+    print(json.dumps(result))
 
-      - name: exec shell command uptime
-        shell: uptime
+
+def run_playbook():
+    runner = PlayBookRunner()
+    play_book = ["/Users/ad/workspace/demo-api/ansible/main.yml"]
+    result = runner.run(play_book)
+    print(result)
+
+
+def main():
+    run_adhoc()
+    # run_playbook()
+
+
+main()

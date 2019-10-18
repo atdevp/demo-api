@@ -11,25 +11,25 @@ import shutil
 import ansible.constants as C
 import json
 import logging
+from collections import defaultdict
 
 
 class MyCallbackResult(CallbackBase):
     def __init__(self):
-        self.success = {}
-        self.failed = {}
-        self.unreachable = {}
+
+        self.result = defaultdict(dict)
 
     def v2_runner_on_ok(self, result, **kwargs):
         hostname = result._host.get_name()
-        self.success[hostname] = result
+        self.result["success"] = {hostname: result._result}
 
     def v2_runner_on_failed(self, result, **kwargs):
         hostname = result._host.get_name()
-        self.failed[hostname] = result
+        self.result["failed"] = {hostname: result._result}
 
     def v2_runner_on_unreachable(self, result, **kwargs):
         hostname = result._host.get_name()
-        self.unreachable[hostname] = result
+        self.result["unreachable"] = {hostname: result._result}
 
 
 ANSIBLE_INVENTORY_DEFAULT_PATH = "~/.ansible/hosts"
@@ -58,23 +58,6 @@ class ADHocRunner(BaseRunner):
     def __init__(self):
         super().__init__()
 
-    def _json_result(self):
-        result = {}
-        result["success"] = {}
-        result["failed"] = {}
-        result["unreachable"] = {}
-
-        for host, value in self.my_callback.success.items():
-            result["success"][host] = value._result
-
-        for host, value in self.my_callback.failed.items():
-            result["failed"][host] = value._result
-
-        for host, value in self.my_callback.unreachable.items():
-            result["unreachable"][host] = value._result
-
-        return result
-
     def run(self, hosts, tasks):
         _play = dict(
             name="Ansible ADHoc Task",
@@ -83,13 +66,13 @@ class ADHocRunner(BaseRunner):
             tasks=tasks
         )
 
-        self.my_callback = MyCallbackResult()
+        std_callback = MyCallbackResult()
         tmq = TaskQueueManager(
             inventory=self.inventory,
             variable_manager=self.variable_manager,
             loader=self.loader,
             passwords=dict(),
-            stdout_callback=self.my_callback
+            stdout_callback=std_callback
         )
         play = Play.load(_play, variable_manager=self.variable_manager, loader=self.loader)
         try:
@@ -100,7 +83,7 @@ class ADHocRunner(BaseRunner):
             tmq.cleanup()
 
         shutil.rmtree(C.DEFAULT_LOCAL_TMP)
-        return self._json_result()
+        return std_callback.result
 
 
 class PlayBookRunner(BaseRunner):

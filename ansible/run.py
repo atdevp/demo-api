@@ -1,5 +1,6 @@
 from api import ADHocRunner
 from api import PlayBookRunner
+import json
 
 
 def run_adhoc():
@@ -15,8 +16,8 @@ def run_adhoc():
     ]
 
     #result = runner.run(hosts, tasks)
-    result = runner.run("test", tasks)
-    print(result)
+    result = runner.run("t1", tasks)
+    print(json.dumps(result))
 
 
 def run_playbook():
@@ -27,8 +28,8 @@ def run_playbook():
 
 
 def main():
-    # run_adhoc()
-    run_playbook()
+    run_adhoc()
+    # run_playbook()
 
 
 main()
